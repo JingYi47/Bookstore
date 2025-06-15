@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    tools:context=".PaymentMethodActivity">
+
+    <ImageView
+        android:id="@+id/button_payment_back"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="8dp"
+        android:src="@drawable/ic_backbutton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:contentDescription="Back Button" />
+
+    <TextView
+        android:id="@+id/text_view_payment_header"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="Phương thức thanh toán"
+        android:textColor="@android:color/black"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        app:layout_constraintBottom_toBottomOf="@+id/button_payment_back"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/button_payment_back"
+        app:layout_constraintTop_toTopOf="@+id/button_payment_back" />
+
+    <RadioGroup
+        android:id="@+id/radio_group_payment_methods"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="24dp"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/text_view_payment_header">
+
+        <RadioButton
+            android:id="@+id/radio_cash_on_delivery"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:background="@drawable/rounded_section_background"
+            android:button="@android:color/transparent"
+            android:checked="true"
+            android:clickable="true"
+            android:focusable="true"
+            android:drawableStart="@drawable/ic_price"
+            android:drawablePadding="16dp"
+            android:gravity="center_vertical"
+            android:text="Thanh toán tiền mặt\n(Thanh toán khi nhận hàng)"
+            android:textColor="@android:color/black"
+            android:textSize="16sp" />
+        <RadioButton
+            android:id="@+id/radio_credit_debit_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:padding="16dp"
+            android:background="@drawable/rounded_section_background"
+            android:button="@android:color/transparent"
+            android:clickable="true"
+            android:focusable="true"
+            android:drawableStart="@drawable/ic_creditcard"
+            android:drawablePadding="16dp"
+            android:gravity="center_vertical"
+            android:text="Credit or debit card\n(Thẻ Visa hoặc Mastercard)"
+            android:textColor="@android:color/black"
+            android:textSize="16sp" />
+        <RadioButton
+            android:id="@+id/radio_bank_transfer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:padding="16dp"
+            android:background="@drawable/rounded_section_background"
+            android:button="@android:color/transparent"
+            android:clickable="true"
+            android:focusable="true"
+            android:drawableStart="@drawable/ic_balance"
+            android:drawablePadding="16dp"
+            android:gravity="center_vertical"
+            android:text="Chuyển khoản ngân hàng\n(Tự động xác nhận)"
+            android:textColor="@android:color/black"
+            android:textSize="16sp" />
+        <RadioButton
+            android:id="@+id/radio_zalopay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:padding="16dp"
+            android:background="@drawable/rounded_section_background"
+            android:button="@android:color/transparent"
+            android:clickable="true"
+            android:focusable="true"
+            android:drawableStart="@drawable/ic_zalopay"
+            android:drawablePadding="10dp"
+            android:gravity="center_vertical"
+            android:text="ZaloPay\n(Tự động xác nhận)"
+            android:textColor="@android:color/black"
+            android:textSize="16sp" />
+    </RadioGroup>
+
+    <Button
+        android:id="@+id/button_select_payment_method"
+        android:layout_width="0dp"
+        android:layout_height="55dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="32dp"
+        android:text="Xác nhận"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        android:backgroundTint="#140B0C"
+        app:cornerRadius="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
