@@ -1,6 +1,8 @@
 package com.thanhvan.bookstoremanager.model;
 
-public class Product {
+import java.io.Serializable;
+
+public class Product implements Serializable {
     private String id;
     private String title;
     private String author;
@@ -8,11 +10,11 @@ public class Product {
     private double rating;
     private double price;
     private double originalPrice;
-    private int imageResId;
+    private String imageUrl;
 
     public Product() { }
 
-    public Product(String id, String title, String author, String category, double rating, double price, double originalPrice, int imageResId) {
+    public Product(String id, String title, String author, String category, double rating, double price, double originalPrice, String imageUrl) {
         this.id = id;
         this.title = title;
         this.author = author;
@@ -20,28 +22,25 @@ public class Product {
         this.rating = rating;
         this.price = price;
         this.originalPrice = originalPrice;
-        this.imageResId = imageResId;
+        this.imageUrl = imageUrl;
     }
 
-    // Getters
     public String getId() { return id; }
-    public String getTitle() { return title; }
-    public String getAuthor() { return author; }
-    public String getCategory() { return category; }
-    public double getRating() { return rating; }
-    public double getPrice() { return price; }
-    public double getOriginalPrice() { return originalPrice; }
-    public int getImageResId() { return imageResId; }
-
-    // Setters (Nếu cần, có thể dùng Alt+Insert để generate)
     public void setId(String id) { this.id = id; }
+    public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
+    public String getAuthor() { return author; }
     public void setAuthor(String author) { this.author = author; }
+    public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
+    public double getRating() { return rating; }
     public void setRating(double rating) { this.rating = rating; }
+    public double getPrice() { return price; }
     public void setPrice(double price) { this.price = price; }
+    public double getOriginalPrice() { return originalPrice; }
     public void setOriginalPrice(double originalPrice) { this.originalPrice = originalPrice; }
-    public void setImageResId(int imageResId) { this.imageResId = imageResId; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 
     @Override
     public String toString() {
@@ -53,7 +52,7 @@ public class Product {
                 ", rating=" + rating +
                 ", price=" + price +
                 ", originalPrice=" + originalPrice +
-                ", imageResId=" + imageResId +
+                ", imageUrl='" + imageUrl + '\'' +
                 '}';
     }
 }

@@ -31,7 +31,7 @@
                 android:id="@+id/text_view_address_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Nguyen Thi Van"
+                android:text="@string/address_name_placeholder"
                 android:textColor="@android:color/black"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -41,30 +41,52 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Điện thoại: 09868686868"
+                android:text="@string/address_phone_placeholder"
                 android:textColor="#555555"
                 android:textSize="14sp" />
 
             <TextView
-                android:id="@+id/text_view_full_address"
+                android:id="@+id/text_view_address_full_address"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Địa chỉ: Trung Kinh, Cau Giay, Ha Noi"
+                android:text="@string/address_full_address_placeholder"
                 android:textColor="#555555"
                 android:textSize="14sp" />
         </LinearLayout>
 
-        <ImageView
-            android:id="@+id/image_view_edit_address"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_edit"
-            app:tint="#555555"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Edit Address" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginStart="16dp"
+            android:gravity="center_horizontal">
+
+            <ImageView
+                android:id="@+id/image_view_edit_address"
+                android:layout_width="48dp"  android:layout_height="48dp"
+                android:src="@drawable/ic_edit"
+                app:tint="#333333"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/edit_address_description"
+                android:scaleType="centerInside" />
+
+            <ImageView
+                android:id="@+id/image_view_delete_address"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@android:drawable/ic_menu_delete"
+                app:tint="#333333"
+                android:contentDescription="@string/delete_address_description"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_marginTop="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:scaleType="centerInside" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

@@ -76,7 +76,7 @@
                     android:id="@+id/image_view_delete_cart_item"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@drawable/ic_delete"
+                    android:src="@drawable/delete"
                     android:layout_marginEnd="16dp"
                     app:tint="#F44336"
                     android:contentDescription="Delete Cart Item" />

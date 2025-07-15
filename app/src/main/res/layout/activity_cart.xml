@@ -9,18 +9,18 @@
 
     <ImageView
         android:id="@+id/button_cart_back"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:clickable="true"
         android:focusable="true"
-        android:padding="8dp"
-        android:src="@drawable/ic_cartshopping"
+        android:padding="12dp"
+        android:src="@drawable/back"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:contentDescription="Back Button" />
+        android:contentDescription="Nút quay lại" />
 
     <TextView
         android:id="@+id/text_view_cart_header"
@@ -62,17 +62,21 @@
             <TextView
                 android:id="@+id/text_view_add_more_to_cart"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:text="Thêm vào giỏ hàng"
-                android:textColor="#007BFF"
+                android:layout_height="48dp"
+                android:text="Thêm sản phẩm khác"
+                android:textColor="?attr/colorPrimary"
                 android:textSize="16sp"
+                android:textStyle="bold"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:gravity="center_vertical"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="16dp"
                 android:clickable="true"
                 android:focusable="true"
-                android:drawableStart="@drawable/ic_backbutton"
+                app:drawableStartCompat="@drawable/back"
                 android:drawablePadding="8dp"
-                app:drawableTint="#007BFF"/>
+                android:contentDescription="Nút thêm sản phẩm khác vào giỏ hàng" />
 
             <LinearLayout
                 android:id="@+id/layout_payment_method"
@@ -99,15 +103,16 @@
                     android:layout_height="wrap_content"
                     android:text="Chưa chọn phương thức thanh toán"
                     android:textColor="#555555"
-                    android:textSize="14sp" />
+                    android:textSize="16sp" />
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_marginStart="8dp"
                     android:src="@drawable/forwardarrow"
                     app:tint="#555555"
-                    android:contentDescription="Forward Arrow" />
+                    android:contentDescription="Mũi tên chuyển tiếp" />
             </LinearLayout>
+
             <LinearLayout
                 android:id="@+id/layout_shipping_address"
                 android:layout_width="match_parent"
@@ -129,18 +134,21 @@
                     android:textSize="16sp" />
                 <TextView
                     android:id="@+id/text_view_selected_shipping_address"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:text="Chưa chọn địa chỉ giao hàng"
                     android:textColor="#555555"
-                    android:textSize="14sp" />
+                    android:textSize="16sp"
+                    android:maxLines="2"
+                    android:ellipsize="end" />
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_marginStart="8dp"
                     android:src="@drawable/forwardarrow"
                     app:tint="#555555"
-                    android:contentDescription="Forward Arrow" />
+                    android:contentDescription="Mũi tên chuyển tiếp" />
             </LinearLayout>
 
             <LinearLayout
@@ -168,14 +176,14 @@
                     android:layout_height="wrap_content"
                     android:text="Chưa áp dụng mã khuyến mại"
                     android:textColor="#555555"
-                    android:textSize="14sp" />
+                    android:textSize="16sp" />
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_marginStart="8dp"
                     android:src="@drawable/forwardarrow"
                     app:tint="#555555"
-                    android:contentDescription="Forward Arrow" />
+                    android:contentDescription="Mũi tên chuyển tiếp" />
             </LinearLayout>
 
             <LinearLayout

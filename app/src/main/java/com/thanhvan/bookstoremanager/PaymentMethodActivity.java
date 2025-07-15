@@ -1,4 +1,5 @@
 package com.thanhvan.bookstoremanager;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -24,10 +25,10 @@ public class PaymentMethodActivity extends AppCompatActivity {
         paymentMethodsRadioGroup = findViewById(R.id.radio_group_payment_methods);
         selectMethodButton = findViewById(R.id.button_select_payment_method);
 
-        // Xử lý nút quay lại
+
         backButton.setOnClickListener(v -> finish());
 
-        // Mặc định chọn Cash on Delivery
+
         paymentMethodsRadioGroup.check(R.id.radio_cash_on_delivery);
 
         selectMethodButton.setOnClickListener(v -> {

@@ -1,24 +1,34 @@
 package com.thanhvan.bookstoremanager;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import androidx.annotation.NonNull;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.activity.result.ActivityResultLauncher; // NEW IMPORT
-import androidx.activity.result.contract.ActivityResultContracts; // NEW IMPORT
+import com.thanhvan.bookstoremanager.Adapter.CartAdapter;
+import com.thanhvan.bookstoremanager.model.CartItem;
+import com.thanhvan.bookstoremanager.model.Discount;
+import com.thanhvan.bookstoremanager.model.Order;
+import com.thanhvan.bookstoremanager.model.OrderItem;
+import com.thanhvan.bookstoremanager.sqlite.BookDao;
+import com.thanhvan.bookstoremanager.sqlite.CartItemDao;
+import com.thanhvan.bookstoremanager.sqlite.DiscountDao;
+import com.thanhvan.bookstoremanager.sqlite.OrderDao;
+import com.thanhvan.bookstoremanager.sqlite.OrderItemDao;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -40,48 +50,62 @@ public class CartActivity extends AppCompatActivity {
 
     private CartAdapter cartAdapter;
     private List<CartItem> cartList;
+    private CartItemDao cartItemDao;
+    private OrderDao orderDao;
+    private OrderItemDao orderItemDao;
+    private BookDao bookDao;
+    private DiscountDao discountDao;
 
-    // Khai báo ActivityResultLauncher
     private ActivityResultLauncher<Intent> paymentMethodLauncher;
     private ActivityResultLauncher<Intent> shippingAddressLauncher;
+    private ActivityResultLauncher<Intent> promotionLauncher;
+
+    private int selectedDiscountId = -1;
+    private double appliedDiscountPercentage = 0.0;
+    private String currentShippingName = "Tên Người Nhận";
+    private String currentShippingPhone = "Số Điện Thoại";
+    private String currentUserEmail;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_cart);
+        initDaos();
+        initViews();
+        initLaunchers();
+        setupRecyclerView();
+        setupSimpleListeners();
+    }
 
-        // Khởi tạo các ActivityResultLauncher
-        paymentMethodLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == RESULT_OK) {
-                        Intent data = result.getData();
-                        if (data != null) {
-                            String selectedMethod = data.getStringExtra("selected_payment_method");
-                            if (selectedMethod != null) {
-                                selectedPaymentMethodTextView.setText(selectedMethod);
-                            }
-                        }
-                    }
-                }
-        );
+    @Override
+    protected void onResume() {
+        super.onResume();
+        openDaos();
+        loadCartItems();
+        updateLoginStatusAndOrderButton();
+    }
 
-        shippingAddressLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == RESULT_OK) {
-                        Intent data = result.getData();
-                        if (data != null) {
-                            String selectedAddress = data.getStringExtra("selected_shipping_address");
-                            if (selectedAddress != null) {
-                                selectedShippingAddressTextView.setText(selectedAddress);
-                            }
-                        }
-                    }
-                }
-        );
+    @Override
+    protected void onPause() {
+        super.onPause();
+        closeDaos();
+    }
 
-        // Ánh xạ các View
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        closeDaos();
+    }
+
+    private void initDaos() {
+        bookDao = new BookDao(this);
+        discountDao = new DiscountDao(this);
+        orderItemDao = new OrderItemDao(this);
+        orderDao = new OrderDao(this);
+        cartItemDao = new CartItemDao(this);
+    }
+
+    private void initViews() {
         backButton = findViewById(R.id.button_cart_back);
         cartItemsRecyclerView = findViewById(R.id.recycler_view_cart_items);
         addMoreToCartTextView = findViewById(R.id.text_view_add_more_to_cart);
@@ -95,235 +119,238 @@ public class CartActivity extends AppCompatActivity {
         discountAmountTextView = findViewById(R.id.text_view_discount_amount);
         finalTotalAmountTextView = findViewById(R.id.text_view_final_total_amount);
         placeOrderButton = findViewById(R.id.button_place_order);
+    }
 
-        // Lấy dữ liệu sản phẩm vừa thêm từ ProductDetailActivity (hoặc từ SQLite sau này)
-        cartList = new ArrayList<>();
-        Intent intent = getIntent();
-        if (intent != null) {
-            String title = intent.getStringExtra("added_product_title");
-            int price = intent.getIntExtra("added_product_price", 0);
-            int quantity = intent.getIntExtra("added_product_quantity", 0);
-            int imageResId = intent.getIntExtra("added_product_image", 0);
+    private void updateLoginStatusAndOrderButton() {
+        SharedPreferences sharedPref = getSharedPreferences(AppConstants.APP_PREFS, Context.MODE_PRIVATE);
+        currentUserEmail = sharedPref.getString(AppConstants.KEY_LOGGED_IN_USER_EMAIL, "guest@example.com");
 
-            if (title != null && quantity > 0) {
-                cartList.add(new CartItem(title, "Tiểu thuyết tình cảm", price, quantity, imageResId));
+        placeOrderButton.setOnClickListener(v -> {
+            if (currentUserEmail.equals("guest@example.com")) {
+                Toast.makeText(this, "Vui lòng đăng nhập để đặt hàng", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(CartActivity.this, LoginActivity.class));
+                return;
+            }
+            if (!validateOrder()) {
+                return;
+            }
+            createOrder();
+        });
+    }
+
+    private boolean validateOrder() {
+        if ("Chưa chọn phương thức thanh toán".equals(selectedPaymentMethodTextView.getText().toString())) {
+            Toast.makeText(this, "Vui lòng chọn phương thức thanh toán", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if ("Chưa chọn địa chỉ giao hàng".equals(selectedShippingAddressTextView.getText().toString())) {
+            Toast.makeText(this, "Vui lòng chọn địa chỉ giao hàng", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (cartList.isEmpty()) {
+            Toast.makeText(this, "Giỏ hàng của bạn đang trống", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        for (CartItem item : cartList) {
+            if (!bookDao.bookExists(item.getProductId())) {
+                Toast.makeText(this, "Lỗi: Sản phẩm '" + item.getProductTitle() + "' không còn tồn tại.", Toast.LENGTH_LONG).show();
+                return false;
             }
         }
-        // Thêm các sản phẩm mẫu nếu giỏ hàng trống hoặc để test
-        if (cartList.isEmpty()) {
-            cartList.add(new CartItem("J.D. Robb Passions in Death", "Tiểu thuyết tình cảm", 45000, 1, R.drawable.sachbia5));
-            cartList.add(new CartItem("The Uniform of Leadership", "Leadership", 100000, 2, R.drawable.sachbia6));
+        return true;
+    }
+
+    private void createOrder() {
+        double subtotal = 0;
+        int totalQuantity = 0;
+        for (CartItem item : cartList) {
+            subtotal += item.getProductPrice() * item.getProductQuantity();
+            totalQuantity += item.getProductQuantity();
+        }
+        double discountAmount = subtotal * appliedDiscountPercentage;
+        double finalTotal = subtotal - discountAmount;
+        String orderCode = "ORD" + System.currentTimeMillis();
+        long orderDate = System.currentTimeMillis();
+        String status = "Đang xử lý";
+        String shippingAddressFullText = selectedShippingAddressTextView.getText().toString();
+
+        Order newOrder = new Order();
+        newOrder.setUserEmail(currentUserEmail);
+        newOrder.setOrderCode(orderCode);
+        newOrder.setTotalAmount(finalTotal);
+        newOrder.setStatus(status);
+        newOrder.setOrderDate(orderDate);
+        newOrder.setShippingAddress(shippingAddressFullText + " (" + currentShippingName + " - " + currentShippingPhone + ")");
+        newOrder.setTotalQuantity(totalQuantity);
+
+        List<OrderItem> orderItems = new ArrayList<>();
+        for (CartItem item : cartList) {
+            orderItems.add(new OrderItem(item.getProductId(), item.getProductTitle(), item.getProductPrice(), item.getProductQuantity(), item.getImageUrl(), item.getProductCategory()));
         }
 
-        // Cấu hình RecyclerView cho giỏ hàng
+        long insertedOrderId = orderDao.addOrder(newOrder, orderItems);
+
+        if (insertedOrderId != -1) {
+            Toast.makeText(this, "Đặt đơn hàng thành công!", Toast.LENGTH_LONG).show();
+            cartItemDao.clearCart();
+
+            Intent orderConfirmationIntent = new Intent(CartActivity.this, OrderConfirmationActivity.class);
+            orderConfirmationIntent.putExtra("transaction_code", newOrder.getOrderCode());
+            orderConfirmationIntent.putExtra("order_time", new SimpleDateFormat("dd-MM-yyyy, hh:mm a", Locale.getDefault()).format(new Date(orderDate)));
+            orderConfirmationIntent.putExtra("subtotal_price", subtotal);
+            orderConfirmationIntent.putExtra("discount_amount", discountAmount);
+            orderConfirmationIntent.putExtra("final_total_amount", finalTotal);
+            orderConfirmationIntent.putExtra("applied_discount_name", appliedPromoTextView.getText().toString());
+            orderConfirmationIntent.putExtra("payment_method", selectedPaymentMethodTextView.getText().toString());
+            orderConfirmationIntent.putExtra("shipping_name", currentShippingName);
+            orderConfirmationIntent.putExtra("shipping_phone", currentShippingPhone);
+            orderConfirmationIntent.putExtra("shipping_address_full", shippingAddressFullText);
+
+            ArrayList<String> itemTitlesConf = new ArrayList<>();
+            double[] itemPricesArray = new double[orderItems.size()];
+            int[] itemQuantitiesArray = new int[orderItems.size()];
+            ArrayList<String> itemImageUrlsConf = new ArrayList<>();
+            for (int i = 0; i < orderItems.size(); i++) {
+                OrderItem item = orderItems.get(i);
+                itemTitlesConf.add(item.getProductName());
+                itemPricesArray[i] = item.getProductPrice();
+                itemQuantitiesArray[i] = item.getProductQuantity();
+                itemImageUrlsConf.add(item.getProductImageUrl());
+            }
+            orderConfirmationIntent.putStringArrayListExtra("item_titles", itemTitlesConf);
+            orderConfirmationIntent.putExtra("item_prices", itemPricesArray);
+            orderConfirmationIntent.putExtra("item_quantities", itemQuantitiesArray);
+            orderConfirmationIntent.putStringArrayListExtra("item_image_urls", itemImageUrlsConf);
+
+            startActivity(orderConfirmationIntent);
+
+            // finish();
+
+        } else {
+            Toast.makeText(this, "Đặt đơn hàng thất bại. Vui lòng thử lại.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void setupRecyclerView() {
+        cartList = new ArrayList<>();
         cartItemsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         cartAdapter = new CartAdapter(cartList, new CartAdapter.OnItemActionListener() {
             @Override
             public void onQuantityChange(int position, int newQuantity) {
-                cartList.get(position).setQuantity(newQuantity);
-                updateCartSummary();
-                cartAdapter.notifyItemChanged(position);
+                CartItem item = cartList.get(position);
+                if (cartItemDao.updateCartItemQuantity(item.getProductId(), newQuantity) > 0) {
+                    item.setProductQuantity(newQuantity);
+                    updateCartSummary();
+                    cartAdapter.notifyItemChanged(position);
+                }
             }
-
             @Override
             public void onDeleteItem(int position) {
-                cartList.remove(position);
-                cartAdapter.notifyItemRemoved(position);
-                updateCartSummary();
-                Toast.makeText(CartActivity.this, "Đã xóa sản phẩm khỏi giỏ hàng", Toast.LENGTH_SHORT).show();
+                CartItem item = cartList.get(position);
+                if (cartItemDao.deleteCartItem(item.getProductId()) > 0) {
+                    cartList.remove(position);
+                    cartAdapter.notifyItemRemoved(position);
+                    updateCartSummary();
+                }
             }
-
             @Override
             public void onEditItem(int position) {
-                Toast.makeText(CartActivity.this, "Chức năng chỉnh sửa đang phát triển", Toast.LENGTH_SHORT).show();
-                // TODO: Mở màn hình chi tiết sản phẩm để chỉnh sửa hoặc một dialog
+                Toast.makeText(CartActivity.this, "Chức năng đang phát triển", Toast.LENGTH_SHORT).show();
             }
-        });
+        }, this); // <-- Tham số 'this' (Context) đã được thêm vào đây
         cartItemsRecyclerView.setAdapter(cartAdapter);
+    }
 
-        // Cập nhật tóm tắt giỏ hàng lần đầu
-        updateCartSummary();
-
-        // Xử lý nút quay lại
+    private void setupSimpleListeners() {
         backButton.setOnClickListener(v -> finish());
-
-        // Xử lý nút "Thêm vào giỏ hàng"
         addMoreToCartTextView.setOnClickListener(v -> {
-            Intent homeIntent = new Intent(CartActivity.this, HomeActivity.class);
-            startActivity(homeIntent);
-            finish(); // Tùy chọn: đóng CartActivity nếu muốn
-        });
-
-        // Xử lý chọn phương thức thanh toán
-        paymentMethodLayout.setOnClickListener(v -> {
-            Intent paymentIntent = new Intent(CartActivity.this, PaymentMethodActivity.class);
-            paymentMethodLauncher.launch(paymentIntent); // Thay thế startActivityForResult
-        });
-
-        // Xử lý chọn địa chỉ giao hàng
-        shippingAddressLayout.setOnClickListener(v -> {
-            Intent addressIntent = new Intent(CartActivity.this, ShippingAddressActivity.class);
-            shippingAddressLauncher.launch(addressIntent); // Thay thế startActivityForResult
-        });
-
-        // Xử lý áp dụng mã khuyến mãi
-        promoCodeLayout.setOnClickListener(v -> Toast.makeText(CartActivity.this, "Áp dụng mã khuyến mại", Toast.LENGTH_SHORT).show());
-
-        // Xử lý nút "Đặt đơn hàng"
-        placeOrderButton.setOnClickListener(v -> {
-            if (selectedPaymentMethodTextView.getText().toString().equals("Chưa chọn phương thức thanh toán")) {
-                Toast.makeText(CartActivity.this, "Vui lòng chọn phương thức thanh toán", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            if (selectedShippingAddressTextView.getText().toString().equals("Chưa chọn địa chỉ giao hàng")) {
-                Toast.makeText(CartActivity.this, "Vui lòng chọn địa chỉ giao hàng", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            if (cartList.isEmpty()) {
-                Toast.makeText(CartActivity.this, "Giỏ hàng của bạn đang trống", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            // TODO: Implement actual order placement logic (e.g., save to SQLite, send to API)
-            Toast.makeText(CartActivity.this, "Đặt đơn hàng thành công!", Toast.LENGTH_LONG).show();
-            // Xóa giỏ hàng sau khi đặt hàng thành công
-            cartList.clear();
-            cartAdapter.notifyDataSetChanged();
-            updateCartSummary();
-            // Chuyển đến màn hình xác nhận đơn hàng hoặc màn hình Home
-            Intent thankYouIntent = new Intent(CartActivity.this, OrderConfirmationActivity.class); // Giả định có màn hình này
-            startActivity(thankYouIntent);
+            startActivity(new Intent(CartActivity.this, HomeActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK));
             finish();
         });
     }
 
-    // Cập nhật tổng tiền và các thông tin khác của giỏ hàng
+    private void initLaunchers() {
+        paymentMethodLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        selectedPaymentMethodTextView.setText(result.getData().getStringExtra("selected_payment_method"));
+                    }
+                });
+
+        shippingAddressLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        selectedShippingAddressTextView.setText(result.getData().getStringExtra("selected_shipping_address"));
+                        currentShippingName = result.getData().getStringExtra("selected_shipping_name");
+                        currentShippingPhone = result.getData().getStringExtra("selected_shipping_phone");
+                    }
+                });
+
+        promotionLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        selectedDiscountId = result.getData().getIntExtra(PromotionsActivity.EXTRA_SELECTED_DISCOUNT_ID, -1);
+                        appliedDiscountPercentage = result.getData().getDoubleExtra(PromotionsActivity.EXTRA_SELECTED_DISCOUNT_PERCENTAGE, 0.0);
+                        updateCartSummary();
+                    }
+                });
+
+        paymentMethodLayout.setOnClickListener(v -> paymentMethodLauncher.launch(new Intent(this, PaymentMethodActivity.class)));
+        shippingAddressLayout.setOnClickListener(v -> shippingAddressLauncher.launch(new Intent(this, ShippingAddressActivity.class)));
+        promoCodeLayout.setOnClickListener(v -> {
+            Intent promotionIntent = new Intent(this, PromotionsActivity.class);
+            promotionLauncher.launch(promotionIntent);
+        });
+    }
+
+    private void openDaos() {
+        bookDao.open();
+        discountDao.open();
+        orderDao.open();
+        orderItemDao.open();
+        cartItemDao.open();
+    }
+
+    private void closeDaos() {
+        bookDao.close();
+        discountDao.close();
+        orderDao.close();
+        orderItemDao.close();
+        cartItemDao.close();
+    }
+
+    private void loadCartItems() {
+        List<CartItem> loadedItems = cartItemDao.getAllCartItems();
+        cartList.clear();
+        cartList.addAll(loadedItems);
+        cartAdapter.notifyDataSetChanged();
+        updateCartSummary();
+    }
+
     private void updateCartSummary() {
-        int subtotal = 0;
-        int totalItems = 0;
+        double subtotal = 0;
         for (CartItem item : cartList) {
-            subtotal += item.getPrice() * item.getQuantity();
-            totalItems += item.getQuantity();
+            subtotal += item.getProductPrice() * item.getProductQuantity();
         }
 
-        subtotalPriceTextView.setText(String.format(Locale.getDefault(), "%,dđ", subtotal));
-        discountAmountTextView.setText("-0đ"); // Tạm thời là 0
-        finalTotalAmountTextView.setText(String.format(Locale.getDefault(), "%,dđ", subtotal));
-    }
+        double discountAmount = subtotal * appliedDiscountPercentage;
+        double finalTotal = subtotal - discountAmount;
+        subtotalPriceTextView.setText(String.format(Locale.getDefault(), "%,.0fđ", subtotal));
 
-
-    public static class CartItem {
-        private String title;
-        private String category;
-        private int price;
-        private int quantity;
-        private int imageResId;
-
-        public CartItem(String title, String category, int price, int quantity, int imageResId) {
-            this.title = title;
-            this.category = category;
-            this.price = price;
-            this.quantity = quantity;
-            this.imageResId = imageResId;
+        if (appliedDiscountPercentage > 0) {
+            Discount promo = discountDao.getDiscountById(selectedDiscountId);
+            appliedPromoTextView.setText(promo != null ? promo.getName() : String.format(Locale.getDefault(), "Giảm %.0f%%", appliedDiscountPercentage * 100));
+            discountAmountTextView.setText(String.format(Locale.getDefault(), "-%,.0fđ", discountAmount));
+            discountAmountTextView.setVisibility(View.VISIBLE);
+        } else {
+            appliedPromoTextView.setText("Chưa áp dụng");
+            discountAmountTextView.setVisibility(View.GONE);
         }
-
-        public String getTitle() { return title; }
-        public String getCategory() { return category; }
-        public int getPrice() { return price; }
-        public int getQuantity() { return quantity; }
-        public void setQuantity(int quantity) { this.quantity = quantity; }
-        public int getImageResId() { return imageResId; }
-    }
-
-    // --- CartAdapter Class ---
-    public static class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder> {
-
-        private List<CartItem> cartList;
-        private OnItemActionListener listener;
-
-        public interface OnItemActionListener {
-            void onQuantityChange(int position, int newQuantity);
-            void onDeleteItem(int position);
-            void onEditItem(int position);
-        }
-        public CartAdapter(List<CartItem> cartList, OnItemActionListener listener) {
-            this.cartList = cartList;
-            this.listener = listener;
-        }
-
-        @NonNull
-        @Override
-        public CartViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.layout_cart_item, parent, false);
-            return new CartViewHolder(view);
-        }
-
-        @Override
-        public void onBindViewHolder(@NonNull CartViewHolder holder, int position) {
-            CartItem item = cartList.get(position);
-            holder.titleTextView.setText(item.getTitle());
-            holder.categoryTextView.setText(item.getCategory());
-            holder.priceTextView.setText(String.format(Locale.getDefault(), "%,dđ", item.getPrice()));
-            holder.quantityTextView.setText(String.valueOf(item.getQuantity()));
-            holder.productImageView.setImageResource(item.getImageResId());
-
-            holder.increaseButton.setOnClickListener(v -> {
-                int newQuantity = item.getQuantity() + 1;
-                if (listener != null) {
-                    listener.onQuantityChange(position, newQuantity);
-                }
-            });
-
-            holder.decreaseButton.setOnClickListener(v -> {
-                int newQuantity = item.getQuantity() - 1;
-                if (newQuantity >= 1 && listener != null) {
-                    listener.onQuantityChange(position, newQuantity);
-                } else if (newQuantity < 1) {
-                    Toast.makeText(holder.itemView.getContext(), "Số lượng không thể nhỏ hơn 1", Toast.LENGTH_SHORT).show();
-                }
-            });
-
-            holder.deleteButton.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onDeleteItem(position);
-                }
-            });
-
-            holder.editButton.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onEditItem(position);
-                }
-            });
-        }
-
-        @Override
-        public int getItemCount() {
-            return cartList.size();
-        }
-
-        public static class CartViewHolder extends RecyclerView.ViewHolder {
-            ImageView productImageView;
-            TextView titleTextView;
-            TextView categoryTextView;
-            TextView priceTextView;
-            TextView quantityTextView;
-            Button decreaseButton;
-            Button increaseButton;
-            ImageView editButton;
-            ImageView deleteButton;
-
-            public CartViewHolder(@NonNull View itemView) {
-                super(itemView);
-                productImageView = itemView.findViewById(R.id.image_view_cart_product);
-                titleTextView = itemView.findViewById(R.id.text_view_cart_product_title);
-                categoryTextView = itemView.findViewById(R.id.text_view_cart_product_category);
-                priceTextView = itemView.findViewById(R.id.text_view_cart_product_price);
-                quantityTextView = itemView.findViewById(R.id.text_view_cart_quantity);
-                decreaseButton = itemView.findViewById(R.id.button_decrease_cart_quantity);
-                increaseButton = itemView.findViewById(R.id.button_increase_cart_quantity);
-                editButton = itemView.findViewById(R.id.image_view_edit_cart_item);
-                deleteButton = itemView.findViewById(R.id.image_view_delete_cart_item);
-            }
-        }
+        finalTotalAmountTextView.setText(String.format(Locale.getDefault(), "%,.0fđ", finalTotal));
     }
 }
+

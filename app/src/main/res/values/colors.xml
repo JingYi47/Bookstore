@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-    <color name="tab_selected_color">#FF6200EE</color>
-
+    <color name="colorPrimary">#1A5043</color>
+    <color name="colorPrimaryDark">#103C34</color>
+    <color name="colorAccent">#E44D26</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="light_gray">#F0F0F0</color>
+    <color name="medium_gray">#BBBBBB</color>
+    <color name="dark_gray">#333333</color>
+    <color name="tab_selected_color">#FF5722</color>
+    <color name="purple_500">#6200EE</color>
 
 
 </resources>

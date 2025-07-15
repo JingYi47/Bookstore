@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@android:color/white"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context="com.thanhvan.bookstoremanager.EditProductActivity">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#381F23"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light">
+
+        <TextView
+            android:id="@+id/toolbar_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="Thêm sản phẩm"
+            android:textColor="@android:color/white"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+    </androidx.appcompat.widget.Toolbar>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                style="@style/LabelStyle"
+                android:text="ID sản phẩm (*)" />
+
+            <EditText
+                android:id="@+id/et_product_id"
+                style="@style/EditTextStyle"
+                android:hint="ID sản phẩm"
+                android:inputType="text" />
+
+            <TextView
+                style="@style/LabelStyle"
+                android:text="Tên sách (*)" />
+
+            <EditText
+                android:id="@+id/et_product_name"
+                style="@style/EditTextStyle"
+                android:hint="Tên sách"
+                android:inputType="text" />
+
+            <TextView
+                style="@style/LabelStyle"
+                android:text="Tác giả (*)" />
+
+            <EditText
+                android:id="@+id/et_product_author"
+                style="@style/EditTextStyle"
+                android:hint="Tác giả"
+                android:inputType="text" />
+
+            <TextView
+                style="@style/LabelStyle"
+                android:text="Giá gốc (*)" />
+            <EditText
+                android:id="@+id/et_product_original_price"
+                style="@style/EditTextStyle"
+                android:hint="Giá gốc"
+                android:inputType="numberDecimal" />
+
+
+            <TextView
+                style="@style/LabelStyle"
+                android:text="Thể loại (*)" />
+
+            <Spinner
+                android:id="@+id/spinner_category"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/rounded_edittext_background"
+                android:padding="12dp"
+                android:spinnerMode="dropdown"
+                android:layout_marginTop="8dp" />
+
+            <TextView
+                style="@style/LabelStyle"
+                android:text="Rating (*)" />
+
+            <EditText
+                android:id="@+id/et_product_rating"
+                style="@style/EditTextStyle"
+                android:hint="Rating"
+                android:inputType="numberDecimal" />
+
+            <TextView
+                style="@style/LabelStyle"
+                android:text="Giá (*)" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/et_product_price"
+                    style="@style/EditTextStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Giá"
+                    android:inputType="numberDecimal" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text=".000vnd"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp" />
+
+            </LinearLayout>
+
+            <TextView
+                style="@style/LabelStyle"
+                android:text="URL ảnh (*)" />
+
+            <EditText
+                android:id="@+id/et_product_image_url" style="@style/EditTextStyle"
+                android:hint="URL ảnh (ví dụ: https://example.com/image.jpg)"
+                android:inputType="textUri" /> <Button
+            android:id="@+id/btn_update_product"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:backgroundTint="?attr/colorPrimary"
+            android:text="CẬP NHẬT"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:padding="12dp" />
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

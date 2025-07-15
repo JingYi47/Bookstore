@@ -1,6 +1,8 @@
 package com.thanhvan.bookstoremanager;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -10,83 +12,75 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.thanhvan.bookstoremanager.model.User; // Import lớp User
-import com.thanhvan.bookstoremanager.sqlite.UserDao; // Import lớp UserDao
+import com.thanhvan.bookstoremanager.model.User;
+import com.thanhvan.bookstoremanager.sqlite.UserDao;
 
 public class LoginActivity extends AppCompatActivity {
 
-    private EditText emailEditText; // Sẽ dùng làm username
+    private EditText emailEditText;
     private EditText passwordEditText;
     private Button loginButton;
     private TextView forgotPasswordTextView;
-    private TextView registerTextView; // Đã đổi tên để khớp với XML của bạn
+    private TextView registerTextView;
 
-    private UserDao userDao; // Khai báo UserDao
+    private UserDao userDao;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_login); // Layout của bạn
+        setContentView(R.layout.activity_login);
 
-        // Ánh xạ các thành phần UI
-        emailEditText = findViewById(R.id.emailEditText); // Khớp với ID trong XML của bạn
-        passwordEditText = findViewById(R.id.passwordEditText); // Khớp với ID trong XML của bạn
-        loginButton = findViewById(R.id.loginButton); // Khớp với ID trong XML của bạn
-        forgotPasswordTextView = findViewById(R.id.forgotPasswordTextView); // Khớp với ID trong XML của bạn
-        registerTextView = findViewById(R.id.registerTextView); // Khớp với ID trong XML của bạn
+        emailEditText = findViewById(R.id.emailEditText);
+        passwordEditText = findViewById(R.id.passwordEditText);
+        loginButton = findViewById(R.id.loginButton);
+        forgotPasswordTextView = findViewById(R.id.forgotPasswordTextView);
+        registerTextView = findViewById(R.id.registerTextView);
 
-        // Khởi tạo UserDao
         userDao = new UserDao(this);
+        userDao.open();
 
-        // Xử lý sự kiện khi click nút Đăng Nhập
-        loginButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                loginUser(); // Gọi phương thức xử lý đăng nhập
-            }
-        });
+        loginButton.setOnClickListener(v -> loginUser());
 
-        // Xử lý sự kiện khi click Quên mật khẩu?
-        forgotPasswordTextView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(LoginActivity.this, "Chức năng quên mật khẩu đang được phát triển.", Toast.LENGTH_SHORT).show();
-                // TODO: Implement Forgot Password Activity
-            }
-        });
+        forgotPasswordTextView.setOnClickListener(v -> Toast.makeText(LoginActivity.this, "Chức năng quên mật khẩu đang được phát triển.", Toast.LENGTH_SHORT).show());
 
-        // Xử lý sự kiện khi click Đăng Ký
-        registerTextView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Chuyển đến màn hình đăng ký.
-                // Lưu ý: Tên Activity đăng ký của bạn là RegistrationActivity, không phải RegisterActivity
-                Intent intent = new Intent(LoginActivity.this, RegistrationActivity.class);
-                startActivity(intent);
-                finish(); // Đóng LoginActivity để người dùng không quay lại đây khi nhấn Back
-            }
+        registerTextView.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, RegistrationActivity.class);
+            startActivity(intent);
         });
     }
 
     private void loginUser() {
-        String username = emailEditText.getText().toString().trim(); // Email của bạn sẽ là username
+        String usernameOrEmail = emailEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
 
-        if (username.isEmpty() || password.isEmpty()) {
-            Toast.makeText(LoginActivity.this, "Vui lòng nhập đầy đủ email (tên đăng nhập) và mật khẩu.", Toast.LENGTH_SHORT).show();
+        if (usernameOrEmail.isEmpty() || password.isEmpty()) {
+            Toast.makeText(LoginActivity.this, "Vui lòng nhập đầy đủ email và mật khẩu.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Thay thế logic đăng nhập cứng bằng UserDao
-        User user = userDao.checkLogin(username, password);
+        User user = userDao.checkLogin(usernameOrEmail, password);
 
         if (user != null) {
+            // Sửa lại để dùng hằng số từ AppConstants
+            SharedPreferences sharedPreferences = getSharedPreferences(AppConstants.APP_PREFS, Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putString(AppConstants.KEY_LOGGED_IN_USER_EMAIL, user.getEmail());
+            editor.putString(AppConstants.KEY_LOGGED_IN_USERNAME, user.getUsername());
+            editor.putBoolean(AppConstants.KEY_IS_LOGGED_IN, true);
+            editor.apply();
+
             Toast.makeText(LoginActivity.this, "Đăng nhập thành công! Chào mừng " + user.getUsername(), Toast.LENGTH_SHORT).show();
-            // Chuyển sang HomeActivity
-            Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
-            intent.putExtra("loggedInUsername", user.getUsername()); // Truyền username nếu cần
+
+            Intent intent;
+            if ("admin".equalsIgnoreCase(user.getRole())) {
+                intent = new Intent(LoginActivity.this, AdminPanelActivity.class);
+            } else {
+                intent = new Intent(LoginActivity.this, HomeActivity.class);
+            }
+
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
-            finish(); // Đóng LoginActivity
+            finish();
         } else {
             Toast.makeText(LoginActivity.this, "Email (tên đăng nhập) hoặc mật khẩu không đúng.", Toast.LENGTH_SHORT).show();
         }
@@ -95,7 +89,6 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Đóng kết nối database khi Activity bị hủy
         if (userDao != null) {
             userDao.close();
         }
