@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OrderItemDao {
-    private SQLiteDatabase db; // Biến này được quản lý bởi open/close của OrderItemDao
+    private SQLiteDatabase db;
     private DatabaseHelper dbHelper;
 
     public OrderItemDao(Context context) {
@@ -40,13 +40,13 @@ public class OrderItemDao {
         }
     }
 
-    // Phương thức addOrderItem BAN ĐẦU của bạn
+
     public long addOrderItem(OrderItem item) {
-        open(); // Giữ nguyên open() ở đây theo yêu cầu của bạn
+        open();
 
         long result = -1;
         try {
-            // >>> GỌI HÀM INSERT CHÍNH VÀ TRUYỀN DB NỘI BỘ VÀO <<<
+            // Gọi hàm insert chính, truyền db nội bộ vào
             result = insertOrderItem(item, db);
             if (result != -1) {
                 Log.d("OrderItemDao", "Order item inserted: " + item.getProductName() + " for Order ID: " + item.getOrderId());
@@ -56,23 +56,22 @@ public class OrderItemDao {
         } catch (Exception e) {
             Log.e("OrderItemDao", "Error inserting order item: " + e.getMessage());
         } finally {
-            close(); // Giữ nguyên close() ở đây
+            close();
         }
         return result;
     }
 
-    // >>> PHƯƠNG THỨC MỚI: DÙNG KHI DB ĐÃ ĐƯỢC MỞ TỪ BÊN NGOÀI (ví dụ: OrderDao trong transaction) <<<
+    // DÙNG KHI DB ĐÃ ĐƯỢC MỞ TỪ BÊN NGOÀI
     public long addOrderItem(OrderItem item, SQLiteDatabase externalDb) {
         if (externalDb == null || !externalDb.isOpen()) {
             Log.e("OrderItemDao", "External database is not open for adding order item.");
             return -1;
         }
-        // >>> GỌI HÀM INSERT CHÍNH VÀ TRUYỀN DB BÊN NGOÀI VÀO <<<
-        // Phương thức này KHÔNG tự open()/close()
+        // Gọi hàm insert chính, truyền db bên ngoài vào.
         return insertOrderItem(item, externalDb);
     }
 
-    // >>> HÀM CHUNG ĐỂ THỰC HIỆN VIỆC INSERT OrderItem <<<
+
     private long insertOrderItem(OrderItem item, SQLiteDatabase database) {
         ContentValues values = new ContentValues();
         values.put(DatabaseHelper.COL_ORDER_ITEM_ORDER_ID, item.getOrderId());
@@ -93,7 +92,7 @@ public class OrderItemDao {
     }
 
     public List<OrderItem> getOrderItemsByOrderId(int orderId) {
-        open(); // Giữ nguyên open() ở đây
+        open();
 
         List<OrderItem> orderItems = new ArrayList<>();
         Cursor cursor = null;
@@ -115,7 +114,7 @@ public class OrderItemDao {
             if (cursor != null) {
                 cursor.close();
             }
-            close(); // Giữ nguyên close() ở đây
+            close();
         }
         return orderItems;
     }

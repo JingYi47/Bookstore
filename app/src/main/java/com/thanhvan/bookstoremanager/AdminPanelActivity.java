@@ -33,10 +33,9 @@ public class AdminPanelActivity extends AppCompatActivity {
         Fragment fragment = null; int itemId = item.getItemId();
         if (itemId == R.id.nav_admin_categories) { fragment = new CategoryManagementFragment(); }
         else if (itemId == R.id.nav_admin_products) { fragment = new ProductManagementFragment(); }
-        else if (itemId == R.id.nav_admin_orders) {
-            Toast.makeText(this, "Chức năng Đơn hàng đang được xử lý sau!", Toast.LENGTH_SHORT).show();
-            return false;
-        }
+        else if (itemId == R.id.nav_admin_orders) { fragment = new OrderListByStatusFragment();}
+
+
         else if (itemId == R.id.nav_admin_settings) { fragment = new AdminSettingsFragment(); }
         if (fragment != null) { loadFragment(fragment); return true; } return false;
     }

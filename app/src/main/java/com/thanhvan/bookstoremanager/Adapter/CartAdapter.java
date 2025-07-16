@@ -99,9 +99,8 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
 
         public CartViewHolder(@NonNull View itemView) {
             super(itemView);
-            // Giả sử ID các view trong file layout_cart_item.xml của bạn như sau
             ivProduct = itemView.findViewById(R.id.image_view_cart_product);
-            ivDelete = itemView.findViewById(R.id.image_view_delete_cart_item); // <-- Sửa ID ở đây
+            ivDelete = itemView.findViewById(R.id.image_view_delete_cart_item);
             tvTitle = itemView.findViewById(R.id.text_view_cart_product_title);
             tvPrice = itemView.findViewById(R.id.text_view_cart_product_price);
             tvQuantity = itemView.findViewById(R.id.text_view_cart_quantity);

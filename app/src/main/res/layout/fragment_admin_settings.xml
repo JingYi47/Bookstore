@@ -55,37 +55,7 @@
                 android:layout_height="1dp"
                 android:background="#EEEEEE"
                 android:layout_marginHorizontal="16dp"/>
-            <RelativeLayout
-                android:id="@+id/layout_promotions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="?android:attr/selectableItemBackground"
-                android:padding="16dp"
-                android:clickable="true"
-                android:focusable="true">
-                <ImageView
-                    android:id="@+id/icon_promotions"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_discount"
-                    android:layout_centerVertical="true"
-                    android:contentDescription="Promotions Icon" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_toEndOf="@id/icon_promotions"
-                    android:text="Chương trình khuyến mãi"
-                    android:textColor="@android:color/black"
-                    android:textSize="16sp" />
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/forwardarrow"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:contentDescription="Arrow" />
-            </RelativeLayout>
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"

@@ -2,6 +2,7 @@ package com.thanhvan.bookstoremanager;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -10,11 +11,19 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
+import com.thanhvan.bookstoremanager.model.Order;
+import com.thanhvan.bookstoremanager.model.OrderItem;
+import com.thanhvan.bookstoremanager.sqlite.OrderDao;
+import com.thanhvan.bookstoremanager.sqlite.OrderItemDao;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class OrderConfirmationActivity extends AppCompatActivity {
@@ -32,18 +41,60 @@ public class OrderConfirmationActivity extends AppCompatActivity {
     private TextView shippingAddressTextView;
     private Button trackOrderButton;
 
+    private OrderDao orderDao;
+    private OrderItemDao orderItemDao;
+
+    private int currentOrderId = -1;
+    private String currentOrderCode = null;
+
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_order_confirmation);
+
+        orderDao = new OrderDao(this);
+        orderItemDao = new OrderItemDao(this);
 
         initViews();
         Intent intent = getIntent();
         if (intent != null) {
-            populateOrderDetails(intent);
+            currentOrderId = intent.getIntExtra("order_id", -1);
+            currentOrderCode = intent.getStringExtra("order_code");
+
+            if (currentOrderId != -1 || currentOrderCode != null) {
+                loadOrderDetailsFromDatabase(currentOrderId, currentOrderCode);
+            } else {
+                populateOrderDetailsFromIntentExtras(intent);
+            }
         }
         setupListeners();
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (orderDao != null) orderDao.open();
+        if (orderItemDao != null) orderItemDao.open();
+        if (currentOrderId != -1 || currentOrderCode != null) {
+            loadOrderDetailsFromDatabase(currentOrderId, currentOrderCode);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (orderDao != null) orderDao.close();
+        if (orderItemDao != null) orderItemDao.close();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (orderDao != null) orderDao.close();
+        if (orderItemDao != null) orderItemDao.close();
+    }
+
 
     private void initViews() {
         backButtonConfirmation = findViewById(R.id.button_back_confirmation);
@@ -60,7 +111,51 @@ public class OrderConfirmationActivity extends AppCompatActivity {
         trackOrderButton = findViewById(R.id.button_track_order);
     }
 
-    private void populateOrderDetails(Intent intent) {
+    private void loadOrderDetailsFromDatabase(int orderId, String orderCode) {
+        Order order = null;
+        if (orderId != -1) {
+            order = orderDao.getOrderById(orderId);
+        } else if (orderCode != null) {
+            order = orderDao.getOrderByOrderCode(orderCode);
+        }
+
+        if (order != null) {
+            List<OrderItem> orderItems = orderItemDao.getOrderItemsByOrderId(order.getId());
+
+            transactionCodeTextView.setText(order.getOrderCode());
+            orderTimeTextView.setText(new SimpleDateFormat("dd-MM-yyyy, hh:mm a", Locale.getDefault()).format(new Date(order.getOrderDate())));
+
+            double subtotalPrice = 0;
+            for(OrderItem item : orderItems) {
+                subtotalPrice += item.getProductPrice() * item.getProductQuantity();
+            }
+
+            double discountPercentage = 0.0;
+
+            double discountAmount = subtotalPrice * discountPercentage;
+            double finalTotal = subtotalPrice - discountAmount;
+
+            summaryPriceTextView.setText(String.format(Locale.getDefault(), "%,.0fđ", subtotalPrice));
+            summaryDiscountTextView.setText(String.format(Locale.getDefault(), "-%,.0fđ", discountAmount));
+            summaryTotalTextView.setText(String.format(Locale.getDefault(), "%,.0fđ", finalTotal));
+            paymentMethodTextView.setText("Thanh toán tiền mặt");
+            shippingNameTextView.setText(getShippingNameFromAddress(order.getShippingAddress()));
+            shippingPhoneTextView.setText(getShippingPhoneFromAddress(order.getShippingAddress()));
+            shippingAddressTextView.setText(getShippingFullAddress(order.getShippingAddress()));
+
+            productDetailsContainer.removeAllViews();
+            if (orderItems != null && !orderItems.isEmpty()) {
+                for (OrderItem item : orderItems) {
+                    addProductItemToContainer(item.getProductName(), item.getProductPrice(), item.getProductQuantity(), item.getProductImageUrl());
+                }
+            }
+        } else {
+            Toast.makeText(this, "Không tìm thấy thông tin đơn hàng.", Toast.LENGTH_LONG).show();
+            finish();
+        }
+    }
+
+    private void populateOrderDetailsFromIntentExtras(Intent intent) {
         transactionCodeTextView.setText(intent.getStringExtra("transaction_code"));
         orderTimeTextView.setText(intent.getStringExtra("order_time"));
 
@@ -103,7 +198,7 @@ public class OrderConfirmationActivity extends AppCompatActivity {
         TextView productPriceQuantityTextView = productItemView.findViewById(R.id.text_view_product_price_quantity);
 
         if (imageUrl != null && !imageUrl.isEmpty()) {
-            Glide.with(this).load(imageUrl).placeholder(R.drawable.sachbia1).into(productImageView);
+            Glide.with(this).load(imageUrl).placeholder(R.drawable.sachbia1).error(R.drawable.sachbia1).into(productImageView);
         } else {
             productImageView.setImageResource(R.drawable.sachbia1);
         }
@@ -115,10 +210,18 @@ public class OrderConfirmationActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        backButtonConfirmation.setOnClickListener(v -> navigateToHome());
+        backButtonConfirmation.setOnClickListener(v -> onBackPressed());
 
-        // Sửa lại chức năng của nút này để quay về trang chủ
-        trackOrderButton.setOnClickListener(v -> navigateToHome());
+        trackOrderButton.setOnClickListener(v -> {
+            if (currentOrderId != -1 || currentOrderCode != null) {
+                Intent trackingIntent = new Intent(OrderConfirmationActivity.this, OrderTrackingActivity.class);
+                trackingIntent.putExtra("order_id", currentOrderId);
+                trackingIntent.putExtra("order_code", currentOrderCode);
+                startActivity(trackingIntent);
+            } else {
+                Toast.makeText(this, "Không có thông tin đơn hàng để theo dõi.", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void navigateToHome() {
@@ -131,6 +234,42 @@ public class OrderConfirmationActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        navigateToHome();
+    }
+
+    private String getShippingNameFromAddress(String fullAddress) {
+        if (fullAddress != null && fullAddress.contains(" (") && fullAddress.endsWith(")")) {
+            try {
+                int startIndex = fullAddress.lastIndexOf(" (") + 2;
+                int endIndex = fullAddress.lastIndexOf(" - ");
+                if (startIndex < endIndex) {
+                    return fullAddress.substring(startIndex, endIndex);
+                }
+            } catch (Exception e) {
+                Log.e("OrderConfirm", "Error parsing shipping name: " + e.getMessage());
+            }
+        }
+        return "N/A";
+    }
+
+    private String getShippingPhoneFromAddress(String fullAddress) {
+        if (fullAddress != null && fullAddress.contains(" - ") && fullAddress.endsWith(")")) {
+            try {
+                int startIndex = fullAddress.lastIndexOf(" - ") + 3;
+                int endIndex = fullAddress.lastIndexOf(")");
+                if (startIndex < endIndex) {
+                    return fullAddress.substring(startIndex, endIndex);
+                }
+            } catch (Exception e) {
+                Log.e("OrderConfirm", "Error parsing shipping phone: " + e.getMessage());
+            }
+        }
+        return "N/A";
+    }
+
+    private String getShippingFullAddress(String fullAddress) {
+        if (fullAddress != null && fullAddress.contains(" (") && fullAddress.endsWith(")")) {
+            return fullAddress.substring(0, fullAddress.lastIndexOf(" ("));
+        }
+        return fullAddress;
     }
 }

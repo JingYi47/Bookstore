@@ -30,9 +30,7 @@ public class AccountActivity extends AppCompatActivity {
         setContentView(R.layout.activity_account);
 
         userDao = new UserDao(this);
-        // >>> ĐÃ SỬA: Dùng AppConstants.APP_PREFS để nhất quán với LoginActivity <<<
         sharedPreferences = getSharedPreferences(AppConstants.APP_PREFS, Context.MODE_PRIVATE);
-
         backButton = findViewById(R.id.button_account_back);
         userEmailTextView = findViewById(R.id.text_view_user_email);
         layoutFeedback = findViewById(R.id.layout_feedback);
@@ -59,14 +57,13 @@ public class AccountActivity extends AppCompatActivity {
     }
 
     private void displayUserEmail() {
-        // >>> ĐÃ SỬA: Dùng AppConstants.KEY_LOGGED_IN_USER_EMAIL để lấy email <<<
+
         String loggedInEmail = sharedPreferences.getString(AppConstants.KEY_LOGGED_IN_USER_EMAIL, "Không có email");
         userEmailTextView.setText(loggedInEmail);
     }
 
     private void performLogout() {
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        // Nên xóa các key liên quan đến đăng nhập thay vì editor.clear() toàn bộ file nếu có dữ liệu khác
         editor.remove(AppConstants.KEY_LOGGED_IN_USER_EMAIL);
         editor.remove(AppConstants.KEY_LOGGED_IN_USERNAME);
         editor.remove(AppConstants.KEY_IS_LOGGED_IN);

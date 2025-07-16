@@ -5,4 +5,5 @@
     <string name="address_full_address_placeholder">Địa chỉ: Trung Kinh, Cau Giay, Ha Noi</string>
     <string name="edit_address_description">Chỉnh sửa địa chỉ</string>
     <string name="delete_address_description">Xóa địa chỉ</string>
+    <string name="empty_admin_order_list_message_with_status">Không có đơn hàng nào ở trạng thái \'%s\'.</string>
 </resources>

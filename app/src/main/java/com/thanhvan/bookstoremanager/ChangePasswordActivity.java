@@ -1,4 +1,5 @@
 package com.thanhvan.bookstoremanager;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -30,7 +31,6 @@ public class ChangePasswordActivity extends AppCompatActivity {
         setContentView(R.layout.activity_change_password);
 
         userDao = new UserDao(this);
-        // >>> ĐIỂM SỬA 1: Dùng AppConstants.APP_PREFS để nhất quán với LoginActivity <<<
         sharedPreferences = getSharedPreferences(AppConstants.APP_PREFS, Context.MODE_PRIVATE);
 
         backButton = findViewById(R.id.button_change_password_back);
@@ -39,7 +39,6 @@ public class ChangePasswordActivity extends AppCompatActivity {
         confirmNewPasswordEditText = findViewById(R.id.edit_text_confirm_new_password);
         changePasswordButton = findViewById(R.id.button_change_password);
 
-        // >>> ĐIỂM SỬA 2: Dùng AppConstants.KEY_LOGGED_IN_USERNAME để lấy username <<<
         loggedInUsername = sharedPreferences.getString(AppConstants.KEY_LOGGED_IN_USERNAME, null);
 
         if (loggedInUsername == null) {
@@ -71,10 +70,8 @@ public class ChangePasswordActivity extends AppCompatActivity {
             return;
         }
 
-        // Mở kết nối cơ sở dữ liệu để lấy thông tin người dùng
         userDao.open();
         User user = userDao.getUserByUsername(loggedInUsername);
-        // Đóng kết nối ngay sau khi sử dụng để tránh rò rỉ tài nguyên
         userDao.close();
 
         if (user == null) {
@@ -82,16 +79,6 @@ public class ChangePasswordActivity extends AppCompatActivity {
             return;
         }
 
-        // >>> LƯU Ý QUAN TRỌNG VỀ BẢO MẬT MẬT KHẨU <<<
-        // Nếu bạn mã hóa mật khẩu trong DB (KHUYẾN NGHỊ RẤT CAO):
-        // Bạn cần một hàm để kiểm tra mật khẩu plain text (oldPassword) với mật khẩu đã hash (user.getPassword()).
-        // Ví dụ: if (!YourPasswordHasher.checkPassword(oldPassword, user.getPassword())) { ... }
-        // Và trước khi gọi updateUserPassword, bạn phải mã hóa newPassword.
-        // Ví dụ: String hashedNewPassword = YourPasswordHasher.hashPassword(newPassword);
-        // Sau đó truyền hashedNewPassword vào userDao.updateUserPassword.
-        //
-        // Nếu bạn đang lưu mật khẩu plain text (KHÔNG KHUYẾN NGHỊ CHO PRODUCTION):
-        // Dòng code hiện tại có thể hoạt động, nhưng nó không an toàn.
         if (!user.getPassword().equals(oldPassword)) {
             Toast.makeText(this, "Mật khẩu cũ không chính xác", Toast.LENGTH_SHORT).show();
             oldPasswordEditText.setError("Mật khẩu cũ không chính xác");
@@ -99,10 +86,8 @@ public class ChangePasswordActivity extends AppCompatActivity {
             return;
         }
 
-        // Mở lại kết nối cơ sở dữ liệu để cập nhật mật khẩu
         userDao.open();
-        boolean updateSuccess = userDao.updateUserPassword(loggedInUsername, newPassword); // Nếu mã hóa, 'newPassword' phải là bản đã mã hóa ở đây
-        // Đóng kết nối
+        boolean updateSuccess = userDao.updateUserPassword(loggedInUsername, newPassword);
         userDao.close();
 
         if (updateSuccess) {
@@ -116,7 +101,6 @@ public class ChangePasswordActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Đảm bảo userDao được đóng khi Activity bị hủy để tránh rò rỉ bộ nhớ
         if (userDao != null) {
             userDao.close();
         }

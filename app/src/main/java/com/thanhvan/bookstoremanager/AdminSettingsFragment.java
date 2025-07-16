@@ -17,7 +17,7 @@ import com.thanhvan.bookstoremanager.R;
 public class AdminSettingsFragment extends Fragment {
     private TextView tvAdminEmail;
 
-    private RelativeLayout layoutPromotions, layoutFeedback, layoutLogout;
+    private RelativeLayout  layoutFeedback, layoutLogout;
 
     @Nullable @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -31,21 +31,17 @@ public class AdminSettingsFragment extends Fragment {
 
         tvAdminEmail = view.findViewById(R.id.tv_admin_email);
 
-        layoutPromotions = view.findViewById(R.id.layout_promotions);
+
         layoutFeedback = view.findViewById(R.id.layout_feedback);
         layoutLogout = view.findViewById(R.id.layout_logout);
 
         tvAdminEmail.setText("main@admin.com");
-        layoutPromotions.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Chuyển đến màn hình Chương trình khuyến mãi", Toast.LENGTH_SHORT).show();
-            // Intent intent = new Intent(getContext(), PromotionsManagementActivity.class);
-            // startActivity(intent);
-        });
+
 
         layoutFeedback.setOnClickListener(v -> {
             Toast.makeText(getContext(), "Chuyển đến màn hình Phản hồi & Góp ý", Toast.LENGTH_SHORT).show();
             // Intent intent = new Intent(getContext(), FeedbackManagementActivity.class);
-            // startActivity(intent);
+            // startActivity(intent)
         });
 
         layoutLogout.setOnClickListener(v -> {

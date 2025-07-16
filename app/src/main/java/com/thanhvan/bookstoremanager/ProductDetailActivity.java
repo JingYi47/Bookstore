@@ -64,7 +64,6 @@ public class ProductDetailActivity extends AppCompatActivity {
         totalAmountTextView = findViewById(R.id.text_view_total_amount);
         addToCartButton = findViewById(R.id.button_add_to_cart);
 
-        // Lấy dữ liệu sản phẩm từ Intent
         Intent intent = getIntent();
         if (intent != null) {
             productId = intent.getStringExtra("product_id");
@@ -138,7 +137,6 @@ public class ProductDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // Kiểm tra xem sản phẩm đã có trong giỏ hàng chưa (dùng productId)
         if (cartItemDao.isProductInCart(productId)) {
             int existingQuantity = cartItemDao.getProductQuantity(productId);
             long result = cartItemDao.updateCartItemQuantity(productId, existingQuantity + currentQuantity);
@@ -148,7 +146,6 @@ public class ProductDetailActivity extends AppCompatActivity {
                 Toast.makeText(this, "Cập nhật giỏ hàng thất bại.", Toast.LENGTH_SHORT).show();
             }
         } else {
-            // Thêm mới sản phẩm vào giỏ hàng (với productId)
             CartItem newCartItem = new CartItem(
                     productTitle,
                     productCurrentPrice,

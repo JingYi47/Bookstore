@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OrderDao {
-    private SQLiteDatabase db; // Biến này được quản lý bởi open/close của OrderDao
+    private SQLiteDatabase db;
     private DatabaseHelper dbHelper;
     private OrderItemDao orderItemDao;
 
@@ -29,8 +29,7 @@ public class OrderDao {
                 Log.e("OrderDao", "Error opening database for writing: " + e.getMessage());
             }
         }
-        // >>> ĐÃ SỬA: Bỏ dòng gọi orderItemDao.open() <<<
-        // orderItemDao.open(); // Bỏ dòng này đi
+
     }
 
     public void close() {
@@ -42,14 +41,13 @@ public class OrderDao {
                 Log.e("OrderDao", "Error closing database: " + e.getMessage());
             }
         }
-        // >>> ĐÃ SỬA: Bỏ dòng gọi orderItemDao.close() <<<
-        // orderItemDao.close(); // Bỏ dòng này đi
+
     }
 
     public long addOrder(Order order, List<OrderItem> orderItems) {
-        open(); // Giữ nguyên open() ở đây theo yêu cầu của bạn
+        open();
         long orderId = -1;
-        db.beginTransaction(); // Bắt đầu transaction
+        db.beginTransaction();
         try {
             ContentValues values = new ContentValues();
             values.put(DatabaseHelper.COL_ORDER_USER_EMAIL, order.getUserEmail());
@@ -66,10 +64,10 @@ public class OrderDao {
                 // Nếu thêm Order thành công, thêm các OrderItem
                 for (OrderItem item : orderItems) {
                     item.setOrderId((int) orderId); // Gán orderId cho item
-                    // >>> ĐÃ SỬA: GỌI PHƯƠNG THỨC MỚI VÀ TRUYỀN DB CỦA OrderDao VÀO <<<
-                    long orderItemResult = orderItemDao.addOrderItem(item, db); // TRUYỀN db của OrderDao
+
+                    long orderItemResult = orderItemDao.addOrderItem(item, db);
                     if (orderItemResult == -1) {
-                        // Nếu một item thất bại, hủy toàn bộ transaction
+
                         orderId = -1;
                         break;
                     }
@@ -77,15 +75,15 @@ public class OrderDao {
             }
 
             if (orderId != -1) {
-                db.setTransactionSuccessful(); // Đánh dấu transaction thành công
+                db.setTransactionSuccessful();
             }
 
         } catch (Exception e) {
             Log.e("OrderDao", "Error adding order: " + e.getMessage());
-            orderId = -1; // Đảm bảo trả về lỗi
+            orderId = -1;
         } finally {
-            db.endTransaction(); // Kết thúc transaction (commit hoặc rollback)
-            close(); // Giữ nguyên close() ở đây
+            db.endTransaction();
+            close();
         }
         return orderId;
     }
@@ -113,7 +111,177 @@ public class OrderDao {
             if (cursor != null) {
                 cursor.close();
             }
-            close(); // Giữ nguyên close() ở đây
+            close();
+        }
+        return orders;
+    }
+
+    public List<Order> getOrdersByUserEmail(String userEmail) {
+        open(); // Mở kết nối DB
+        List<Order> orders = new ArrayList<>();
+        Cursor cursor = null;
+        try {
+            cursor = db.query(DatabaseHelper.TABLE_ORDERS,
+                    null,
+                    DatabaseHelper.COL_ORDER_USER_EMAIL + " = ?", // Lọc theo email người dùng
+                    new String[]{userEmail},
+                    null, null,
+                    DatabaseHelper.COL_ORDER_DATE + " DESC"); // Sắp xếp theo ngày, mới nhất trước
+
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    orders.add(cursorToOrder(cursor));
+                } while (cursor.moveToNext());
+            }
+        } catch (Exception e) {
+            Log.e("OrderDao", "Lỗi khi lấy đơn hàng theo email người dùng: " + e.getMessage());
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            close(); // Đóng kết nối DB
+        }
+        return orders;
+    }
+
+    public List<Order> getOrdersByUserEmailAndStatus(String userEmail, String status) {
+        open(); // Mở kết nối DB
+        List<Order> orders = new ArrayList<>();
+        Cursor cursor = null;
+        try {
+            cursor = db.query(DatabaseHelper.TABLE_ORDERS,
+                    null,
+                    DatabaseHelper.COL_ORDER_USER_EMAIL + " = ? AND " + DatabaseHelper.COL_ORDER_STATUS + " = ?",
+                    new String[]{userEmail, status},
+                    null, null,
+                    DatabaseHelper.COL_ORDER_DATE + " DESC");
+
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    orders.add(cursorToOrder(cursor));
+                } while (cursor.moveToNext());
+            }
+        } catch (Exception e) {
+            Log.e("OrderDao", "Lỗi khi lấy đơn hàng theo email người dùng và trạng thái: " + e.getMessage());
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            close(); // Đóng kết nối DB
+        }
+        return orders;
+    }
+
+    public Order getOrderById(int orderId) {
+        open();
+        Order order = null;
+        Cursor cursor = null;
+        try {
+            cursor = db.query(DatabaseHelper.TABLE_ORDERS,
+                    null,
+                    DatabaseHelper.COL_ORDER_ID + " = ?",
+                    new String[]{String.valueOf(orderId)},
+                    null, null, null);
+
+            if (cursor != null && cursor.moveToFirst()) {
+                order = cursorToOrder(cursor);
+            }
+        } catch (Exception e) {
+            Log.e("OrderDao", "Lỗi khi lấy đơn hàng theo ID: " + e.getMessage());
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            close();
+        }
+        return order;
+    }
+
+    public Order getOrderByOrderCode(String orderCode) {
+        open();
+        Order order = null;
+        Cursor cursor = null;
+        try {
+            cursor = db.query(DatabaseHelper.TABLE_ORDERS,
+                    null,
+                    DatabaseHelper.COL_ORDER_CODE + " = ?",
+                    new String[]{orderCode},
+                    null, null, null);
+
+            if (cursor != null && cursor.moveToFirst()) {
+                order = cursorToOrder(cursor);
+            }
+        } catch (Exception e) {
+            Log.e("OrderDao", "Lỗi khi lấy đơn hàng theo mã code: " + e.getMessage());
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            close();
+        }
+        return order;
+    }
+
+    // CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG
+    public boolean updateOrderStatus(int orderId, String newStatus) {
+        open();
+        ContentValues values = new ContentValues();
+        values.put(DatabaseHelper.COL_ORDER_STATUS, newStatus);
+        int rowsAffected = 0;
+        try {
+            rowsAffected = db.update(DatabaseHelper.TABLE_ORDERS, values,
+                    DatabaseHelper.COL_ORDER_ID + " = ?",
+                    new String[]{String.valueOf(orderId)});
+        } catch (Exception e) {
+            Log.e("OrderDao", "Lỗi khi cập nhật trạng thái đơn hàng: " + e.getMessage());
+        } finally {
+            close();
+        }
+        return rowsAffected > 0;
+    }
+
+    public boolean updateOrderStatus(String orderCode, String newStatus) {
+        open();
+        ContentValues values = new ContentValues();
+        values.put(DatabaseHelper.COL_ORDER_STATUS, newStatus);
+        int rowsAffected = 0;
+        try {
+            rowsAffected = db.update(DatabaseHelper.TABLE_ORDERS, values,
+                    DatabaseHelper.COL_ORDER_CODE + " = ?",
+                    new String[]{orderCode});
+        } catch (Exception e) {
+            Log.e("OrderDao", "Lỗi khi cập nhật trạng thái đơn hàng bằng code: " + e.getMessage());
+        } finally {
+            close();
+        }
+        return rowsAffected > 0;
+    }
+
+
+    public List<Order> getAllOrders() {
+        open();
+        List<Order> orders = new ArrayList<>();
+        Cursor cursor = null;
+        try {
+            cursor = db.query(DatabaseHelper.TABLE_ORDERS,
+                    null,
+                    null,
+                    null,
+                    null, null,
+                    DatabaseHelper.COL_ORDER_DATE + " DESC");
+
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    orders.add(cursorToOrder(cursor));
+                } while (cursor.moveToNext());
+            }
+        } catch (Exception e) {
+            Log.e("OrderDao", "Lỗi khi lấy tất cả đơn hàng: " + e.getMessage());
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            close();
         }
         return orders;
     }
@@ -128,6 +296,7 @@ public class OrderDao {
         order.setTotalQuantity(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COL_ORDER_TOTAL_QUANTITY)));
         order.setOrderDate(cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseHelper.COL_ORDER_DATE)));
         order.setShippingAddress(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COL_ORDER_SHIPPING_ADDRESS)));
+
         return order;
     }
 }

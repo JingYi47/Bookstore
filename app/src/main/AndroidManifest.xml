@@ -48,6 +48,9 @@
         <activity android:name=".AdminPanelActivity" />
         <activity android:name=".EditCategoryActivity" />
         <activity android:name=".EditProductActivity" />
+        <activity android:name=".HistoryActivity" />
+        <activity android:name=".OrderTrackingActivity" />
+
 
 
     </application>
